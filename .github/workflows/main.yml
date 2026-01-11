@@ -15,26 +15,30 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Fetch with Working Proxy
+      - name: Stealth Fetch with Proxy
         run: |
-          # 1. Direct fetch with your authenticated Indian Proxy
-          # Is syntax mein error aane ke chances 0% hain
+          # 1. Fetch using Authenticated Proxy with extra stealth headers
+          # Humne Referer aur Origin add kiya hai taaki worker ko lage request site se hai
           curl -x "http://sony:bypass123@140.245.25.215:3128" -L --compressed \
-            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; rv:78.0) Gecko/20100101 Firefox/78.0" \
+            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0" \
             -H "Accept: */*" \
-            -H "Accept-Encoding: gzip" \
-            -H "Cache-Control: no-cache, no-store" \
-            -H "Host: hotstarlive.delta-cloud.workers.dev" \
+            -H "Accept-Language: en-US,en;q=0.5" \
+            -H "Referer: https://hotstarlive.delta-cloud.workers.dev/" \
+            -H "Origin: https://hotstarlive.delta-cloud.workers.dev/" \
+            -H "Sec-Fetch-Dest: empty" \
+            -H "Sec-Fetch-Mode: cors" \
+            -H "Sec-Fetch-Site: same-origin" \
             "https://hotstarlive.delta-cloud.workers.dev/?token=240bb9-374e2e-3c13f0-4a7xz5" \
             -o temp_playlist.m3u
 
-          # 2. Check content (Wait for #EXTM3U)
+          # 2. Validation
           if grep -q "#EXTM3U" temp_playlist.m3u; then
             mv temp_playlist.m3u playlist.m3u
-            echo "SUCCESS: Playlist updated with Indian Proxy."
+            echo "SUCCESS: Playlist finally fetched."
           else
-            echo "FAILURE: Redirected or Blocked. Check Proxy Status."
-            cat temp_playlist.m3u
+            echo "FAILURE: Still getting YouTube redirect. Proxy IP might be blacklisted."
+            # Debug: check the title of the HTML received
+            grep "<title>" temp_playlist.m3u || head -n 5 temp_playlist.m3u
             exit 1
           fi
 
@@ -43,4 +47,4 @@ jobs:
           git config --global user.name "GithubBot"
           git config --global user.email "bot@github.com"
           git add playlist.m3u
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Update: $(date)" && git push)
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Stealth Update: $(date)" && git push)
