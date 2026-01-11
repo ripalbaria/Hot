@@ -15,10 +15,11 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Fetch Without Proxy
+      - name: Fetch with Working Proxy
         run: |
-          # Bina proxy ke direct curl
-          curl -L --compressed \
+          # 1. Direct fetch with your authenticated Indian Proxy
+          # Is syntax mein error aane ke chances 0% hain
+          curl -x "http://sony:bypass123@140.245.25.215:3128" -L --compressed \
             -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; rv:78.0) Gecko/20100101 Firefox/78.0" \
             -H "Accept: */*" \
             -H "Accept-Encoding: gzip" \
@@ -27,20 +28,19 @@ jobs:
             "https://hotstarlive.delta-cloud.workers.dev/?token=240bb9-374e2e-3c13f0-4a7xz5" \
             -o temp_playlist.m3u
 
-          # Check karein ki M3U mila ya YouTube ka HTML
+          # 2. Check content (Wait for #EXTM3U)
           if grep -q "#EXTM3U" temp_playlist.m3u; then
             mv temp_playlist.m3u playlist.m3u
-            echo "SUCCESS: Valid playlist received without proxy."
+            echo "SUCCESS: Playlist updated with Indian Proxy."
           else
-            echo "FAILURE: Redirected to YouTube or Blocked. GitHub IP is not Indian."
-            # Debugging ke liye file ka pehla hissa dekhein
-            head -c 100 temp_playlist.m3u
+            echo "FAILURE: Redirected or Blocked. Check Proxy Status."
+            cat temp_playlist.m3u
             exit 1
           fi
 
-      - name: Commit and Push Changes
+      - name: Commit and Push
         run: |
           git config --global user.name "GithubBot"
           git config --global user.email "bot@github.com"
           git add playlist.m3u
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Update Without Proxy: $(date)" && git push)
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update: $(date)" && git push)
