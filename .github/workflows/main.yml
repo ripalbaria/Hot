@@ -1,47 +1,34 @@
-name: Proxy-Sync Playlist
+name: Proxy-Sync Python
 
 on:
   schedule:
-    - cron: '*/20 * * * *'
+    - cron: '0 */2 * * *'
   workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  download:
+  run-script:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Fetch with Stable Indian Proxy
-        run: |
-          # 1. 115.114.77.133 wali proxy ka use kar rahe hain
-          # Headers ko exact wahi rakha hai jo successful capture mein tha
-          curl -x "http://115.114.77.133:9090" -L --compressed \
-            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; rv:78.0) Gecko/20100101 Firefox/78.0" \
-            -H "Accept: */*" \
-            -H "Accept-Encoding: gzip" \
-            -H "Cache-Control: no-cache, no-store" \
-            -H "Host: hotstarlive.delta-cloud.workers.dev" \
-            "https://hotstarlive.delta-cloud.workers.dev/?token=240bb9-374e2e-3c13f0-4a7xz5" \
-            -o temp_playlist.m3u
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
-          # 2. Validation Check
-          if grep -q "#EXTM3U" temp_playlist.m3u; then
-            mv temp_playlist.m3u playlist.m3u
-            echo "SUCCESS: Playlist fetched successfully with 115.114 proxy!"
-          else
-            echo "FAILURE: Redirected to YouTube or Proxy Down."
-            # Debug: show what we actually got
-            head -n 5 temp_playlist.m3u
-            exit 1
-          fi
+      - name: Install Dependencies
+        run: pip install httpx
 
-      - name: Commit and Push Changes
+      - name: Fetch Playlist
+        run: python fetch_script.py
+
+      - name: Commit and Push
         run: |
           git config --global user.name "GithubBot"
           git config --global user.email "bot@github.com"
           git add playlist.m3u
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Update with 115.114 Proxy: $(date)" && git push)
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Python Oracle Update: $(date)" && git push)
