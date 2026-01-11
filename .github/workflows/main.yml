@@ -15,14 +15,10 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Fetch with Authenticated Proxy
-        env:
-          # Secret ko load karein
-          MY_PROXY: ${{ secrets.INDIAN_PROXY }}
+      - name: Fetch Without Proxy
         run: |
-          # 1. Curl command with strict syntax and verbose logging for debugging
-          # -v flag se hume exact error details milengi agar fail hua toh
-          curl -v -x "$MY_PROXY" -L --compressed \
+          # Bina proxy ke direct curl
+          curl -L --compressed \
             -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; rv:78.0) Gecko/20100101 Firefox/78.0" \
             -H "Accept: */*" \
             -H "Accept-Encoding: gzip" \
@@ -31,13 +27,13 @@ jobs:
             "https://hotstarlive.delta-cloud.workers.dev/?token=240bb9-374e2e-3c13f0-4a7xz5" \
             -o temp_playlist.m3u
 
-          # 2. Validation: Check if #EXTM3U exists
+          # Check karein ki M3U mila ya YouTube ka HTML
           if grep -q "#EXTM3U" temp_playlist.m3u; then
             mv temp_playlist.m3u playlist.m3u
-            echo "SUCCESS: Valid playlist fetched."
+            echo "SUCCESS: Valid playlist received without proxy."
           else
-            echo "FAILURE: Received invalid data (likely HTML or Proxy Auth Error)."
-            # Debug: show what was received
+            echo "FAILURE: Redirected to YouTube or Blocked. GitHub IP is not Indian."
+            # Debugging ke liye file ka pehla hissa dekhein
             head -c 100 temp_playlist.m3u
             exit 1
           fi
@@ -47,4 +43,4 @@ jobs:
           git config --global user.name "GithubBot"
           git config --global user.email "bot@github.com"
           git add playlist.m3u
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Update: $(date)" && git push)
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update Without Proxy: $(date)" && git push)
