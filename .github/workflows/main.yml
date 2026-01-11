@@ -17,12 +17,12 @@ jobs:
 
       - name: Fetch with Authenticated Proxy
         env:
-          # Secret ko load karte waqt quotes ka use karein
+          # Secret ko load karein
           MY_PROXY: ${{ secrets.INDIAN_PROXY }}
         run: |
-          # 1. Curl command with authenticated proxy secret
-          # Proxy URL ko quotes "" mein rakhein taaki special characters handle ho sakein
-          curl -x "$MY_PROXY" -L --compressed \
+          # 1. Curl command with strict syntax and verbose logging for debugging
+          # -v flag se hume exact error details milengi agar fail hua toh
+          curl -v -x "$MY_PROXY" -L --compressed \
             -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; rv:78.0) Gecko/20100101 Firefox/78.0" \
             -H "Accept: */*" \
             -H "Accept-Encoding: gzip" \
@@ -31,18 +31,20 @@ jobs:
             "https://hotstarlive.delta-cloud.workers.dev/?token=240bb9-374e2e-3c13f0-4a7xz5" \
             -o temp_playlist.m3u
 
-          # 2. Safety Check
+          # 2. Validation: Check if #EXTM3U exists
           if grep -q "#EXTM3U" temp_playlist.m3u; then
             mv temp_playlist.m3u playlist.m3u
-            echo "SUCCESS: Playlist updated securely."
+            echo "SUCCESS: Valid playlist fetched."
           else
-            echo "FAILURE: Could not fetch M3U. Check proxy logs or token."
+            echo "FAILURE: Received invalid data (likely HTML or Proxy Auth Error)."
+            # Debug: show what was received
+            head -c 100 temp_playlist.m3u
             exit 1
           fi
 
-      - name: Commit and Push
+      - name: Commit and Push Changes
         run: |
           git config --global user.name "GithubBot"
           git config --global user.email "bot@github.com"
           git add playlist.m3u
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-Update: $(date)" && git push)
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update: $(date)" && git push)
