@@ -2,8 +2,8 @@ name: Proxy-Sync Playlist
 
 on:
   schedule:
-    - cron: '*/20 * * * *'
-  workflow_dispatch:
+    - cron: '*/20 * * * *' # Har 20 minute mein chalega
+  workflow_dispatch:      # Manual run karne ke liye
 
 permissions:
   contents: write
@@ -15,12 +15,13 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Fetch with Indian Proxy
+      - name: Fetch with Secret Proxy
+        env:
+          # Secret ko environment variable mein safely load kar rahe hain
+          SECRET_PROXY: ${{ secrets.INDIAN_PROXY }}
         run: |
-          # 1. Fetch data using your Indian Proxy (Oracle)
-          # Replace 'YOUR_IP:PORT' with your actual proxy details
-          # Use -H for each custom header seen in your screenshot
-          curl -x "http://115.114.77.133:9090" -L --compressed \
+          # 1. Curl command with secret proxy and exact headers
+          curl -x "$SECRET_PROXY" -L --compressed \
             -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; rv:78.0) Gecko/20100101 Firefox/78.0" \
             -H "Accept: */*" \
             -H "Accept-Encoding: gzip" \
@@ -29,14 +30,12 @@ jobs:
             "https://hotstarlive.delta-cloud.workers.dev/?token=240bb9-374e2e-3c13f0-4a7xz5" \
             -o temp_playlist.m3u
 
-          # 2. SAFETY CHECK: Only proceed if file starts with #EXTM3U
+          # 2. Validation: Check if the file is a valid M3U
           if grep -q "#EXTM3U" temp_playlist.m3u; then
             mv temp_playlist.m3u playlist.m3u
-            echo "SUCCESS: Valid playlist received."
+            echo "SUCCESS: Valid M3U fetched using secret proxy."
           else
-            echo "FAILURE: Received HTML/Bot Challenge or YouTube Redirect."
-            # Debug: show the first line of what was actually received
-            head -n 1 temp_playlist.m3u
+            echo "FAILURE: Received HTML or YouTube redirect. Check Proxy or Token."
             exit 1
           fi
 
@@ -45,4 +44,5 @@ jobs:
           git config --global user.name "GithubBot"
           git config --global user.email "bot@github.com"
           git add playlist.m3u
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Update: $(date)" && git push)
+          # Agar koi change nahi hai toh commit skip karega
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-Update Playlist: $(date)" && git push)
