@@ -2,7 +2,7 @@ name: Proxy-Sync Playlist
 
 on:
   schedule:
-    - cron: '*/20 * * * *'
+    - cron: '0 */2 * * *' # Block se bachne ke liye har 2 ghante ka time rakha hai
   workflow_dispatch:
 
 permissions:
@@ -15,30 +15,27 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Stealth Fetch with Proxy
+      - name: Fetch with New Indian Proxy
         run: |
-          # 1. Fetch using Authenticated Proxy with extra stealth headers
-          # Humne Referer aur Origin add kiya hai taaki worker ko lage request site se hai
-          curl -x "http://sony:bypass123@140.245.25.215:3128" -L --compressed \
-            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0" \
+          # 1. Naya Proxy URL use kar rahe hain
+          # Headers ko exact wahi rakha hai jo aapke successful capture mein tha
+          curl -x "http://sony:bypass123@80.225.242.97:3128" -L --compressed \
+            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; rv:78.0) Gecko/20100101 Firefox/78.0" \
             -H "Accept: */*" \
-            -H "Accept-Language: en-US,en;q=0.5" \
-            -H "Referer: https://hotstarlive.delta-cloud.workers.dev/" \
-            -H "Origin: https://hotstarlive.delta-cloud.workers.dev/" \
-            -H "Sec-Fetch-Dest: empty" \
-            -H "Sec-Fetch-Mode: cors" \
-            -H "Sec-Fetch-Site: same-origin" \
+            -H "Accept-Encoding: gzip" \
+            -H "Cache-Control: no-cache, no-store" \
+            -H "Host: hotstarlive.delta-cloud.workers.dev" \
             "https://hotstarlive.delta-cloud.workers.dev/?token=240bb9-374e2e-3c13f0-4a7xz5" \
             -o temp_playlist.m3u
 
-          # 2. Validation
+          # 2. Check if received content is M3U or YouTube HTML
           if grep -q "#EXTM3U" temp_playlist.m3u; then
             mv temp_playlist.m3u playlist.m3u
-            echo "SUCCESS: Playlist finally fetched."
+            echo "SUCCESS: Playlist fetched with NEW Proxy!"
           else
-            echo "FAILURE: Still getting YouTube redirect. Proxy IP might be blacklisted."
-            # Debug: check the title of the HTML received
-            grep "<title>" temp_playlist.m3u || head -n 5 temp_playlist.m3u
+            echo "FAILURE: Still getting redirected. Check if token is expired."
+            # Debug: Pehli 5 lines check karein
+            head -n 5 temp_playlist.m3u
             exit 1
           fi
 
@@ -47,4 +44,4 @@ jobs:
           git config --global user.name "GithubBot"
           git config --global user.email "bot@github.com"
           git add playlist.m3u
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Stealth Update: $(date)" && git push)
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update with New IP: $(date)" && git push)
