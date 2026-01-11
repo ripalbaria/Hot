@@ -1,15 +1,12 @@
-name: Proxy-Sync Python
+name: Oracle Stealth Sync
 
 on:
   schedule:
     - cron: '0 */2 * * *'
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
-  run-script:
+  run-stealth:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -20,8 +17,9 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install Dependencies
-        run: pip install httpx
+      - name: Install Stealth Libs
+        run: |
+          pip install curl_cffi
 
       - name: Fetch Playlist
         run: python fetch_script.py
@@ -31,4 +29,4 @@ jobs:
           git config --global user.name "GithubBot"
           git config --global user.email "bot@github.com"
           git add playlist.m3u
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Python Oracle Update: $(date)" && git push)
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Oracle Stealth Update: $(date)" && git push)
