@@ -1,35 +1,48 @@
-name: Fetch M3U Playlist
+name: Proxy-Sync Playlist
 
 on:
   schedule:
-    - cron: '0 */6 * * *' # Runs every 6 hours
-  workflow_dispatch: # Allows manual trigger
+    - cron: '*/20 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
-  build:
+  download:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
-
-      - name: Install dependencies
-        run: pip install requests
-
-      - name: Run Fetch Script
-        env:
-          INDIAN_PROXY: ${{ secrets.INDIAN_PROXY }}
-        run: python fetch_m3u.py
-
-      - name: Commit and Push
+      - name: Fetch with Indian Proxy
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add playlist.m3u
-          git commit -m "Update M3U playlist" || exit 0
-          git push
+          # 1. Fetch data using your Indian Proxy (Oracle)
+          # Replace 'YOUR_IP:PORT' with your actual proxy details
+          # Use -H for each custom header seen in your screenshot
+          curl -x "http://115.114.77.133:9090" -L --compressed \
+            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; rv:78.0) Gecko/20100101 Firefox/78.0" \
+            -H "Accept: */*" \
+            -H "Accept-Encoding: gzip" \
+            -H "Cache-Control: no-cache, no-store" \
+            -H "Host: hotstarlive.delta-cloud.workers.dev" \
+            "https://hotstarlive.delta-cloud.workers.dev/?token=240bb9-374e2e-3c13f0-4a7xz5" \
+            -o temp_playlist.m3u
 
+          # 2. SAFETY CHECK: Only proceed if file starts with #EXTM3U
+          if grep -q "#EXTM3U" temp_playlist.m3u; then
+            mv temp_playlist.m3u playlist.m3u
+            echo "SUCCESS: Valid playlist received."
+          else
+            echo "FAILURE: Received HTML/Bot Challenge or YouTube Redirect."
+            # Debug: show the first line of what was actually received
+            head -n 1 temp_playlist.m3u
+            exit 1
+          fi
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "GithubBot"
+          git config --global user.email "bot@github.com"
+          git add playlist.m3u
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update: $(date)" && git push)
