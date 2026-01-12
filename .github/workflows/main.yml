@@ -19,7 +19,7 @@ jobs:
         run: |
           # 1. 115.114.77.133 wali proxy ka use kar rahe hain
           # Headers ko exact wahi rakha hai jo successful capture mein tha
-          curl -x "http://115.114.77.133:9090" -L --compressed \
+          curl -x "http://103.160.207.49:32650" -L --compressed \
             -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; rv:78.0) Gecko/20100101 Firefox/78.0" \
             -H "Accept: */*" \
             -H "Accept-Encoding: gzip" \
