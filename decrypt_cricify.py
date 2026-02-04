@@ -5,7 +5,7 @@ from Crypto.Util.Padding import unpad
 
 # Configuration
 # The domain and path were found in your Reqable capture
-DATA_URL = "https://cfyhgdgnkkuvn92.top/categories/live-events.txt"
+DATA_URL = "https://cfyhgdgnkkuvn92.top/cats.txt"
 # Hex Key and IV extracted from CryptoUtils.kt Smali
 KEY_HEX = "3368487a78594167534749382f68616d"
 IV_HEX = "557143766b766a656345497a38343256"
